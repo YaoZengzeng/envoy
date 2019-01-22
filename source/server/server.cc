@@ -74,6 +74,7 @@ InstanceImpl::InstanceImpl(Options& options, Event::TimeSystem& time_system,
 
     restarter_.initialize(*dispatcher_, *this);
     drain_manager_ = component_factory.createDrainManager(*this);
+    // 初始化，用于配置listener ds, router ds以及cluster ds
     initialize(options, local_address, component_factory);
   } catch (const EnvoyException& e) {
     ENVOY_LOG(critical, "error initializing configuration '{}': {}", options.configPath(),
@@ -225,6 +226,7 @@ void InstanceImpl::initialize(Options& options,
                 Configuration::UpstreamTransportSocketConfigFactory>::allFactoryNames());
 
   // Handle configuration that needs to take place prior to the main configuration load.
+  // 加载初始化配置，里面配置了lds，rds和cds
   InstanceUtil::loadBootstrapConfig(bootstrap_, options);
   bootstrap_config_update_time_ = time_system_.systemTime();
 
@@ -258,6 +260,7 @@ void InstanceImpl::initialize(Options& options,
   info.original_start_time_ = original_start_time_;
   restarter_.shutdownParentAdmin(info);
   original_start_time_ = info.original_start_time_;
+  // 创建AdminImpl，从而可以接受接口请求
   admin_.reset(new AdminImpl(initial_config.admin().accessLogPath(),
                              initial_config.admin().profilePath(), *this));
   if (initial_config.admin().address()) {
@@ -276,6 +279,8 @@ void InstanceImpl::initialize(Options& options,
   loadServerFlags(initial_config.flagsPath());
 
   // Workers get created first so they register for thread local updates.
+  // 创建ListenerManagerImpl用于管理监听，因为当downstream要访问upstream的时候，
+  // envoy会进行监听，Downstream会连接监听的端口
   listener_manager_.reset(
       new ListenerManagerImpl(*this, listener_component_factory_, worker_factory_, time_system_));
 
@@ -297,6 +302,9 @@ void InstanceImpl::initialize(Options& options,
   // Once we have runtime we can initialize the SSL context manager.
   ssl_context_manager_.reset(new Ssl::ContextManagerImpl(*runtime_loader_));
 
+  // ProdClusterManagerFactory用于创建cluster manager，管理上游集群
+  // ProdClusterManagerFactory会创建ClusterManagerImpl，在ClusterManagerImpl的构造函数
+  // 中，如果配置了cds，就需要订阅cds
   cluster_manager_factory_.reset(new Upstream::ProdClusterManagerFactory(
       runtime(), stats(), threadLocal(), random(), dnsResolver(), sslContextManager(), dispatcher(),
       localInfo(), secretManager()));
@@ -309,7 +317,11 @@ void InstanceImpl::initialize(Options& options,
 
   // Instruct the listener manager to create the LDS provider if needed. This must be done later
   // because various items do not yet exist when the listener manager is created.
+  // 如果配置了lds，就订阅Listener Discovery Service
   if (bootstrap_.dynamic_resources().has_lds_config()) {
+    // createLdsApi会调用ProdListenerComponentFactory的createLdsApi函数
+    // 会创建LdsApiImpl，在LdsApiImpl的构造函数中，会创建LdsSubscription，订阅LDS
+    // 当listener的配置改变的时候，会调用LdsApiImpl::onConfigUpdate
     listener_manager_->createLdsApi(bootstrap_.dynamic_resources().lds_config());
   }
 
@@ -340,6 +352,8 @@ void InstanceImpl::initialize(Options& options,
 }
 
 void InstanceImpl::startWorkers() {
+  // 调用listener manager的startWorkers
+  // startWorkers会将listener添加到所有的worker中，然后启动worker的线程
   listener_manager_->startWorkers(*guard_dog_);
 
   // At this point we are ready to take traffic and all listening ports are up. Notify our parent
@@ -446,6 +460,7 @@ void InstanceImpl::run() {
   // we save it as a member variable.
   run_helper_ = std::make_unique<RunHelper>(*dispatcher_, clusterManager(), restarter_,
                                             access_log_manager_, init_manager_, overloadManager(),
+                                            // 启动worker
                                             [this]() -> void { startWorkers(); });
 
   // Run the main dispatch loop waiting to exit.

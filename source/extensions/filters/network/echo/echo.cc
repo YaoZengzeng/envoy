@@ -12,6 +12,7 @@ namespace Echo {
 
 Network::FilterStatus EchoFilter::onData(Buffer::Instance& data, bool end_stream) {
   ENVOY_CONN_LOG(trace, "echo: got {} bytes", read_callbacks_->connection(), data.length());
+  // 从read_callbacks中获取connection，然后向其中回写数据
   read_callbacks_->connection().write(data, end_stream);
   ASSERT(0 == data.length());
   return Network::FilterStatus::StopIteration;

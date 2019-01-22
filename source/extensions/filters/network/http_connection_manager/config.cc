@@ -70,12 +70,14 @@ HttpConnectionManagerFilterConfigFactory::createFilterFactoryFromProtoTyped(
                                                                       context.threadLocal());
           });
 
+  // 创建RouteConfigProviderManagerImpl，并调用createRdsRouteConfigProvider
   std::shared_ptr<Router::RouteConfigProviderManager> route_config_provider_manager =
       context.singletonManager().getTyped<Router::RouteConfigProviderManager>(
           SINGLETON_MANAGER_REGISTERED_NAME(route_config_provider_manager), [&context] {
             return std::make_shared<Router::RouteConfigProviderManagerImpl>(context.admin());
           });
 
+  // 创建HttpConnectionManagerConfig，将RouteConfigProviderManagerImpl作为成员变量传入
   std::shared_ptr<HttpConnectionManagerConfig> filter_config(new HttpConnectionManagerConfig(
       proto_config, context, *date_provider, *route_config_provider_manager));
 
@@ -84,6 +86,7 @@ HttpConnectionManagerFilterConfigFactory::createFilterFactoryFromProtoTyped(
   // destruction order.
   return [route_config_provider_manager, filter_config, &context,
           date_provider](Network::FilterManager& filter_manager) -> void {
+    // 将connectionManagerImpl放到ReadFilter链表中
     filter_manager.addReadFilter(Network::ReadFilterSharedPtr{new Http::ConnectionManagerImpl(
         *filter_config, context.drainDecision(), context.random(), context.httpTracer(),
         context.runtime(), context.localInfo(), context.clusterManager(),
@@ -156,6 +159,8 @@ HttpConnectionManagerConfig::HttpConnectionManagerConfig(
       proxy_100_continue_(config.proxy_100_continue()),
       delayed_close_timeout_(PROTOBUF_GET_MS_OR_DEFAULT(config, delayed_close_timeout, 1000)) {
 
+  // create函数调用RouteConfigProviderManagerImpl::createRdsRouteConfigProvider，在这个函数里
+  // 会创建RdsRouteConfigSubscription订阅RDS，然后创建RdsRouteConfigProviderImpl
   route_config_provider_ = Router::RouteConfigProviderUtil::create(config, context_, stats_prefix_,
                                                                    route_config_provider_manager_);
 

@@ -163,10 +163,13 @@ private:
   ListenerList::iterator getListenerByName(ListenerList& listeners, const std::string& name);
 
   // Active listeners are listeners that are currently accepting new connections on the workers.
+  // Active listeners是当前正在worker中接受新连接的listeners
   ListenerList active_listeners_;
   // Warming listeners are listeners that may need further initialization via the listener's init
   // manager. For example, RDS, or in the future KDS. Once a listener is done warming it will
   // be transitioned to active.
+  // Warming listeners是需要通过listener的init manager进一步初始化的listener
+  // 比如RDS或者未来的XDS，一旦一个listener完成warming，它就会被转化为active
   ListenerList warming_listeners_;
   // Draining listeners are listeners that are in the process of being drained and removed. They
   // go through two phases where first the workers stop accepting new connections and existing

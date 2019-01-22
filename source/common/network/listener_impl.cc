@@ -58,6 +58,7 @@ ListenerImpl::ListenerImpl(Event::DispatcherImpl& dispatcher, Socket& socket, Li
   }
 
   if (bind_to_port) {
+    // 当收到事件时，会调用注册的listenerCallback函数
     listener_.reset(
         evconnlistener_new(&dispatcher.base(), listenCallback, this, 0, -1, socket.fd()));
 

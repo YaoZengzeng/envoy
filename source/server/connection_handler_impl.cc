@@ -18,6 +18,7 @@ ConnectionHandlerImpl::ConnectionHandlerImpl(spdlog::logger& logger, Event::Disp
     : logger_(logger), dispatcher_(dispatcher) {}
 
 void ConnectionHandlerImpl::addListener(Network::ListenerConfig& config) {
+  // 创建active listener
   ActiveListenerPtr l(new ActiveListener(*this, config));
   listeners_.emplace_back(config.socket().localAddress(), std::move(l));
 }
@@ -157,6 +158,7 @@ void ConnectionHandlerImpl::ActiveSocket::continueFilterChain(bool success) {
             Extensions::TransportSockets::TransportSocketNames::get().RawBuffer);
       }
       // Create a new connection on this listener.
+      // 创建一个新的连接
       listener_.newConnection(std::move(socket_));
     }
   }
@@ -168,6 +170,7 @@ void ConnectionHandlerImpl::ActiveSocket::continueFilterChain(bool success) {
   }
 }
 
+// 当新连接建立时，会出发libevent事件，最终调用onAccept函数
 void ConnectionHandlerImpl::ActiveListener::onAccept(
     Network::ConnectionSocketPtr&& socket, bool hand_off_restored_destination_connections) {
   Network::Address::InstanceConstSharedPtr local_address = socket->localAddress();
@@ -175,7 +178,10 @@ void ConnectionHandlerImpl::ActiveListener::onAccept(
                                                       hand_off_restored_destination_connections);
 
   // Create and run the filters
+  // 创建listener filters并用这些filters进行处理
   config_.filterChainFactory().createListenerFilterChain(*active_socket);
+  // continueFilterChain函数调用ConnectionHandlerImpl::ActiveListener::newConnection创建
+  // 一个新的连接
   active_socket->continueFilterChain(true);
 
   // Move active_socket to the sockets_ list if filter iteration needs to continue later.
@@ -197,10 +203,12 @@ void ConnectionHandlerImpl::ActiveListener::newConnection(Network::ConnectionSoc
   }
 
   auto transport_socket = filter_chain->transportSocketFactory().createTransportSocket();
+  // 创建Network::ConnectionImpl
   Network::ConnectionPtr new_connection =
       parent_.dispatcher_.createServerConnection(std::move(socket), std::move(transport_socket));
   new_connection->setBufferLimits(config_.perConnectionBufferLimitBytes());
 
+  // 为该连接创建NetworkFilters
   const bool empty_filter_chain = !config_.filterChainFactory().createNetworkFilterChain(
       *new_connection, filter_chain->networkFilterFactories());
   if (empty_filter_chain) {

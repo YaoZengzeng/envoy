@@ -224,6 +224,7 @@ Network::FilterStatus ConnectionManagerImpl::onData(Buffer::Instance& data, bool
   }
 
   if (!codec_) {
+    // 创建数据解析器，对于HTTP1，创建Http::Http1::ServerConnectionImpl
     codec_ = config_.createCodec(read_callbacks_->connection(), data, *this);
     if (codec_->protocol() == Protocol::Http2) {
       stats_.named_.downstream_cx_http2_total_.inc();
@@ -239,6 +240,7 @@ Network::FilterStatus ConnectionManagerImpl::onData(Buffer::Instance& data, bool
     redispatch = false;
 
     try {
+      // 调用ConnectionImpl::dispatch，里面调用ConnectionImpl::dispatchSlice，在这里对HTTP进行解析
       codec_->dispatch(data);
     } catch (const CodecProtocolException& e) {
       // HTTP/1.1 codec has already sent a 400 response if possible. HTTP/2 codec has already sent
@@ -613,6 +615,7 @@ void ConnectionManagerImpl::ActiveStream::decodeHeaders(HeaderMapPtr&& headers, 
   ASSERT(request_info_.downstreamRemoteAddress() != nullptr);
 
   ASSERT(!cached_route_);
+  // 刷新路由配置并查找到匹配的路由项Route Entry
   refreshCachedRoute();
 
   // Check for WebSocket upgrade request if the route exists, and supports WebSockets.
@@ -669,6 +672,7 @@ void ConnectionManagerImpl::ActiveStream::decodeHeaders(HeaderMapPtr&& headers, 
     traceRequest();
   }
 
+  // 调用decodeHeaders的另一个实现，在这里会通过Route Entry找到后端集群并建立连接
   decodeHeaders(nullptr, *request_headers_, end_stream);
 
   // Reset it here for both global and overridden cases.

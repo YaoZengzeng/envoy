@@ -87,6 +87,7 @@ public:
 /**
  * A manager for all listeners and all threaded connection handling workers.
  */
+// ListenerManager用于管理所有的listeners以及所有线程化的，用于处理连接的workers
 class ListenerManager {
 public:
   virtual ~ListenerManager() {}
@@ -98,6 +99,10 @@ public:
    * should be updated. The new listener must have the same configured address. The old listener
    * will be gracefully drained once the new listener is ready to take traffic (e.g. when RDS has
    * been initialized).
+   添加或者更新listener，Listener由唯一的名字进行引用，如果没有提供名字，manager会为其分配一个UUID
+   那些希望被动态更新的Listener需要提供unique name，Manager会根据名字查找到需要更新的，已经存在的listener
+   新的listener必须有着相同的configured address，老的listener会逐渐地枯竭，一旦新的listener已经准备好接管
+   流量（比如当RDS已经被初始化之后）
    * @param config supplies the configuration proto.
    * @param version_info supplies the xDS version of the listener.
    * @param modifiable supplies whether the added listener can be updated or removed. If the
@@ -128,6 +133,7 @@ public:
   /**
    * @return uint64_t the total number of connections owned by all listeners across all workers.
    */
+  // 所有listener在所有worker中的连接总数
   virtual uint64_t numConnections() PURE;
 
   /**
@@ -143,6 +149,7 @@ public:
    * Start all workers accepting new connections on all added listeners.
    * @param guard_dog supplies the guard dog to use for thread watching.
    */
+  // 启动所有的workers，用于在所有添加的listeners中接受新的连接
   virtual void startWorkers(GuardDog& guard_dog) PURE;
 
   /**

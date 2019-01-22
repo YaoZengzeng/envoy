@@ -149,10 +149,12 @@ ListenerImpl::ListenerImpl(const envoy::api::v2::Listener& config, const std::st
   }
 
   if (!config.listener_filters().empty()) {
+    // 创建listener filter factory
     listener_filter_factories_ =
         parent_.factory_.createListenerFilterFactoryList(config.listener_filters(), *this);
   }
   // Add original dst listener filter if 'use_original_dst' flag is set.
+  // 如果设置了'use_original_dst'，则添加original dst listener filter
   if (PROTOBUF_GET_WRAPPED_OR_DEFAULT(config, use_original_dst, false)) {
     auto& factory =
         Config::Utility::getAndCheckFactory<Configuration::NamedListenerFilterConfigFactory>(
@@ -236,6 +238,7 @@ ListenerImpl::ListenerImpl(const envoy::api::v2::Listener& config, const std::st
         PROTOBUF_GET_WRAPPED_OR_DEFAULT(filter_chain_match, destination_port, 0), destination_ips,
         server_names, filter_chain_match.transport_protocol(), application_protocols,
         config_factory.createTransportSocketFactory(*message, factory_context, server_names),
+        // 遍历所有的NamedNetworkFilterConfigFactory，将所有有名字的filter都过一遍
         parent_.factory_.createNetworkFilterFactoryList(filter_chain.filters(), *this));
 
     need_tls_inspector |= filter_chain_match.transport_protocol() == "tls" ||
@@ -578,7 +581,12 @@ ListenerManagerImpl::ListenerManagerImpl(Instance& server,
       stats_(generateStats(server.stats())),
       config_tracker_entry_(server.admin().getConfigTracker().add(
           "listeners", [this] { return dumpListenerConfigs(); })) {
+  // 创建很多的worker，Envoy采用libevent监听socket的事件，当有新的连接到来
+  // 会将任务分配给某个worker，从而实现异步处理，
   for (uint32_t i = 0; i < server.options().concurrency(); i++) {
+    // createWorker会创建WorkerImpl
+    // 初始化WorkerImpl需要两个参数，一个是allocateDispatcher创建出来的DispatcherImpl
+    // 用来封装libevent的事件分发，另一个是ConnectionHandlerImpl用于管理连接
     workers_.emplace_back(worker_factory.createWorker());
   }
 }
@@ -626,6 +634,7 @@ ListenerManagerStats ListenerManagerImpl::generateStats(Stats::Scope& scope) {
                                      POOL_GAUGE_PREFIX(scope, final_prefix))};
 }
 
+// 当Listener配置发生变化时，调用addOrUpdateListener
 bool ListenerManagerImpl::addOrUpdateListener(const envoy::api::v2::Listener& config,
                                               const std::string& version_info, bool modifiable) {
   std::string name;

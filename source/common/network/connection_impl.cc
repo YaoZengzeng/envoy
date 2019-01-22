@@ -258,6 +258,7 @@ void ConnectionImpl::onRead(uint64_t read_buffer_size) {
     read_end_stream_raised_ = true;
   }
 
+  // 使用network filter对数据进行处理
   filter_manager_.onRead();
 }
 
@@ -433,6 +434,7 @@ void ConnectionImpl::onHighWatermark() {
   }
 }
 
+// 当Downstream发送数据到Envoy的时候，socket就处于可读状态，因而ConnectionImpl::onFileEvent会被调用
 void ConnectionImpl::onFileEvent(uint32_t events) {
   ENVOY_CONN_LOG(trace, "socket event: {}", *this, events);
 
@@ -466,6 +468,7 @@ void ConnectionImpl::onFileEvent(uint32_t events) {
 
   // It's possible for a write event callback to close the socket (which will cause fd_ to be -1).
   // In this case ignore write event processing.
+  // 当事件为Event::FileReadyType::Read时，调用ConnectionImpl::onReadReady()
   if (fd() != -1 && (events & Event::FileReadyType::Read)) {
     onReadReady();
   }
@@ -476,6 +479,7 @@ void ConnectionImpl::onReadReady() {
 
   ASSERT(!connecting_);
 
+  // socket将数据读入缓存
   IoResult result = transport_socket_->doRead(read_buffer_);
   uint64_t new_buffer_size = read_buffer_.length();
   updateReadBufferStats(result.bytes_processed_, new_buffer_size);

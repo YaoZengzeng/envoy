@@ -573,6 +573,7 @@ RouteConstSharedPtr RouteEntryImplBase::clusterEntry(const Http::HeaderMap& head
     }
   }
 
+  // 根据权重选择一个WeightedClusterEntry返回
   return WeightedClusterUtil::pickCluster(weighted_clusters_, total_cluster_weight_, random_value,
                                           true);
 }
@@ -653,6 +654,7 @@ RouteConstSharedPtr PrefixRouteEntryImpl::matches(const Http::HeaderMap& headers
                                                   uint64_t random_value) const {
   if (RouteEntryImplBase::matchRoute(headers, random_value) &&
       StringUtil::startsWith(headers.Path()->value().c_str(), prefix_, case_sensitive_)) {
+    // 得到匹配的Route Entry之后，调用RouteEntryImplBase::clusterEntry获取一个Cluster名字
     return clusterEntry(headers, random_value);
   }
   return nullptr;
@@ -865,6 +867,7 @@ RouteConstSharedPtr VirtualHostImpl::getRouteFromEntries(const Http::HeaderMap& 
 
   // Check for a route that matches the request.
   for (const RouteEntryImplBaseConstSharedPtr& route : routes_) {
+    // 对于每个RouteEntry查看是否匹配
     RouteConstSharedPtr route_entry = route->matches(headers, random_value);
     if (nullptr != route_entry) {
       return route_entry;
@@ -898,8 +901,10 @@ const VirtualHostImpl* RouteMatcher::findVirtualHost(const Http::HeaderMap& head
 
 RouteConstSharedPtr RouteMatcher::route(const Http::HeaderMap& headers,
                                         uint64_t random_value) const {
+  // RouterMatcher的route函数，根据headers.Host()查找virtualhost
   const VirtualHostImpl* virtual_host = findVirtualHost(headers);
   if (virtual_host) {
+    // 调用getRouteFromEntries获取route entry
     return virtual_host->getRouteFromEntries(headers, random_value);
   } else {
     return nullptr;

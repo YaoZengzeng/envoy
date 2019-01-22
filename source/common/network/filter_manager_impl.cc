@@ -53,6 +53,8 @@ void FilterManagerImpl::onContinueReading(ActiveReadFilter* filter) {
 
     BufferSource::StreamBuffer read_buffer = buffer_source_.getReadBuffer();
     if (read_buffer.buffer.length() > 0 || read_buffer.end_stream) {
+      // 对于每个filter调用onData函数，其中HTTP对应的ReadFilter是ConnectionManagerImpl
+      // 因而调用ConnectionManagerImpl::onData函数 
       FilterStatus status = (*entry)->filter_->onData(read_buffer.buffer, read_buffer.end_stream);
       if (status == FilterStatus::StopIteration) {
         return;

@@ -234,7 +234,9 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
   }
 
   // A route entry matches for the request.
+  // 有一个route entry和请求匹配
   route_entry_ = route_->routeEntry();
+  // 根据cluster名称找到cluster的信息
   Upstream::ThreadLocalCluster* cluster = config_.cm_.get(route_entry_->clusterName());
   if (!cluster) {
     config_.stats_.no_cluster_.inc();
@@ -272,6 +274,7 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::HeaderMap& headers, bool e
   }
 
   // Fetch a connection pool for the upstream cluster.
+  // 找到cluster之后开始建立连接
   Http::ConnectionPool::Instance* conn_pool = getConnPool();
   if (!conn_pool) {
     sendNoHealthyUpstreamResponse();
@@ -323,6 +326,9 @@ Http::ConnectionPool::Instance* Filter::getConnPool() {
     protocol = (features & Upstream::ClusterInfo::Features::HTTP2) ? Http::Protocol::Http2
                                                                    : Http::Protocol::Http11;
   }
+  // httpConnPoolForCluster调用ClusterManagerImpl::ThreadLocalClusterManagerImpl::ClusterEntry::connPool
+  // 函数，在这个函数里，HostConstSharedPtr host=lb_->chooseHost(context)，通过负载均衡，在一个cluster里面选择一个后端
+  // 的机器建立连接
   return config_.cm_.httpConnPoolForCluster(route_entry_->clusterName(), route_entry_->priority(),
                                             protocol, this);
 }

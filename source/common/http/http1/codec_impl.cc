@@ -373,6 +373,7 @@ void ConnectionImpl::dispatch(Buffer::Instance& data) {
 }
 
 size_t ConnectionImpl::dispatchSlice(const char* slice, size_t len) {
+  // 解析HTTP
   ssize_t rc = http_parser_execute(&parser_, &settings_, slice, len);
   if (HTTP_PARSER_ERRNO(&parser_) != HPE_OK && HTTP_PARSER_ERRNO(&parser_) != HPE_PAUSED) {
     sendProtocolError();
@@ -570,6 +571,7 @@ int ServerConnectionImpl::onHeadersComplete(HeaderMapImplPtr&& headers) {
     // with message complete. This allows upper layers to behave like HTTP/2 and prevents a proxy
     // scenario where the higher layers stream through and implicitly switch to chunked transfer
     // encoding because end stream with zero body length has not yet been indicated.
+    // 路由根据HTTP头部的信息而来，而decodeHeaders是路由策略的重点
     if (parser_.flags & F_CHUNKED ||
         (parser_.content_length > 0 && parser_.content_length != ULLONG_MAX) || handling_upgrade_) {
       active_request_->request_decoder_->decodeHeaders(std::move(headers), false);

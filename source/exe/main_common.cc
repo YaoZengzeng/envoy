@@ -93,9 +93,11 @@ void MainCommonBase::configureComponentLogLevels() {
   }
 }
 
+// 真正运行main函数
 bool MainCommonBase::run() {
   switch (options_.mode()) {
   case Server::Mode::Serve:
+    // 运行server函数
     server_->run();
     return true;
   case Server::Mode::Validate: {

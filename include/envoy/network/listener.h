@@ -17,6 +17,7 @@ namespace Network {
 /**
  * A configuration for an individual listener.
  */
+// 单个listener的配置
 class ListenerConfig {
 public:
   virtual ~ListenerConfig() {}

@@ -131,6 +131,7 @@ private:
 /**
  * This is the actual full standalone server which stiches together various common components.
  */
+// 这是真实的完整的server，它将各种组建进行组合
 class InstanceImpl : Logger::Loggable<Logger::Id::main>, public Instance {
 public:
   /**
@@ -189,6 +190,7 @@ public:
 private:
   ProtobufTypes::MessagePtr dumpBootstrapConfig();
   void flushStats();
+  // 初始化
   void initialize(Options& options, Network::Address::InstanceConstSharedPtr local_address,
                   ComponentFactory& component_factory);
   void loadServerFlags(const absl::optional<std::string>& flags_path);

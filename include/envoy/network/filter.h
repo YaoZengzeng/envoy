@@ -23,8 +23,10 @@ class ConnectionSocket;
  */
 enum class FilterStatus {
   // Continue to further filters.
+  // Continue继续之后的filters
   Continue,
   // Stop executing further filters.
+  // StopIteration停止执行之后的filters
   StopIteration
 };
 
@@ -92,6 +94,7 @@ public:
    *        be set if the connection has half-close semantics enabled.
    * @return status used by the filter manager to manage further filter iteration.
    */
+  // 当从连接中读取到数据时，调用onData函数
   virtual FilterStatus onData(Buffer::Instance& data, bool end_stream) PURE;
 
   /**
@@ -100,6 +103,7 @@ public:
    * if needed.
    * @return status used by the filter manager to manage further filter iteration.
    */
+  // onNewConnection在新的连接第一次被建立时调用
   virtual FilterStatus onNewConnection() PURE;
 
   /**
@@ -269,6 +273,7 @@ public:
 
   /**
    * Find filter chain that's matching metadata from the new connection.
+   找到和新的connection的metadata匹配的filter chain
    * @param socket supplies connection metadata that's going to be used for the filter chain lookup.
    * @return const FilterChain* filter chain to be used by the new connection,
    *         nullptr if no matching filter chain was found.
@@ -279,12 +284,14 @@ public:
 /**
  * Creates a chain of network filters for a new connection.
  */
+// 为一个新的连接创建一个network filters chain
 class FilterChainFactory {
 public:
   virtual ~FilterChainFactory() {}
 
   /**
    * Called to create the network filter chain.
+   创建network filter chain
    * @param connection supplies the connection to create the chain on.
    * @param filter_factories supplies a list of filter factories to create the chain from.
    * @return true if filter chain was created successfully. Otherwise
@@ -295,6 +302,7 @@ public:
 
   /**
    * Called to create the listener filter chain.
+   创建listener filter chain
    * @param listener supplies the listener to create the chain on.
    * @return true if filter chain was created successfully. Otherwise false.
    */

@@ -26,6 +26,7 @@ RouteConfigProviderPtr RouteConfigProviderUtil::create(
         config,
     Server::Configuration::FactoryContext& factory_context, const std::string& stat_prefix,
     RouteConfigProviderManager& route_config_provider_manager) {
+  // 根据配置的不同，创建静态或者动态的RouteConfigProvider
   switch (config.route_specifier_case()) {
   case envoy::config::filter::network::http_connection_manager::v2::HttpConnectionManager::
       kRouteConfig:

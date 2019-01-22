@@ -34,6 +34,8 @@ void WorkerImpl::addListener(Network::ListenerConfig& listener, AddListenerCompl
   // to surface this.
   dispatcher_->post([this, &listener, completion]() -> void {
     try {
+      // 调用ConnectionHandlerImpl的addListener函数
+      // 创建ActiveListener函数，ActiveListener很重要，它的函数会在libevent收到事件时被调用
       handler_->addListener(listener);
       hooks_.onWorkerListenerAdded();
       completion(true);
